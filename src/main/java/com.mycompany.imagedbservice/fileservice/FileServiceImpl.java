@@ -5,6 +5,7 @@
  */
 package com.mycompany.imagedbservice.fileservice;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -55,38 +56,36 @@ public class FileServiceImpl implements FileService {
 
     @POST
     @Path("/download")
-//    @Consumes(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Consumes(MediaType.APPLICATION_JSON)
+//    @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces({"image/png", "image/jpg", "image/gif"})
-//    public Response downloadImage(Image img, @Context HttpServletRequest req) {
-    public Response downloadImage(@FormDataParam("fname") String fullName, @Context HttpServletRequest req) {
+    public Response downloadImage(Image img, @Context HttpServletRequest req) {
+//    public Response downloadImage(@FormDataParam("imageName") String fullName, @Context HttpServletRequest req) {
         byte[] Img = null;
-        String[] findResult = null;
         ResponseBuilder responseBuilder = null;
         byte[] decodedBytes = null;
         String downloadStatus = "";
         HttpSession session = req.getSession(true);
         int memberId = (int) session.getAttribute("memberId");
-//        String fullName = img.getImgName();
         EntityManagerFactory factory = Persistence.createEntityManagerFactory("com.mycompany_ImageDBService_war_1.0-SNAPSHOTPU");
         EntityManager em = factory.createEntityManager();
 
-        String[] base_ext = separateName(fullName);
-        String imgName = base_ext[0];
+        String imgName = img.getImgName();
         try {
-            findResult = imageDaoImpl.findImg(em, memberId, imgName);
-            System.out.println("======================");
-            System.out.println(memberId+" "+imgName);
-            System.out.println(findResult);
-            System.out.println("======================");
+            String[] findResult = imageDaoImpl.findImg(em, memberId, imgName);
             downloadStatus = findResult[0];
-            if (downloadStatus == "Success") {
+            System.out.println("downloadStatus downloadStatus: "+downloadStatus);//===============================================
+            if (downloadStatus.equals("Success")) {
+//                System.out.println("======================");
+//                System.out.println(findResult[1]);
+//                System.out.println("======================");
                 String encodImg = findResult[1];
                 decodedBytes = Base64.getDecoder().decode(encodImg);
-                responseBuilder = Response.ok(decodedBytes);
-                responseBuilder.header("Content-Disposition", "attachment; filename=\"" + fullName + "\"");
+                responseBuilder = Response.ok(encodImg);
+                responseBuilder.header("Content-Disposition", "attachment; filename=\"" + img.getFullName() + "\"");
                 return responseBuilder.build();
             } else {
+                System.out.println("downloadImage: Response.ok");//===============================================
                 return Response.ok(new JSONObject().put("DownloadStatus", downloadStatus).put("MemberId", memberId).toString(), MediaType.APPLICATION_JSON).build();
             }
         } catch (Exception e) {
@@ -121,16 +120,20 @@ public class FileServiceImpl implements FileService {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return Response.ok("Have some problem.").build();
+            return Response.ok("Have some problem in upload image stage.").build();
         }
     }
 
     @POST
     @Path("/analysis")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response analysisImage(@FormDataParam("fname") String Imgname) {
+//    @Consumes(MediaType.MULTIPART_FORM_DATA)
+//    public Response analysisImage(@FormDataParam("fname") String fullName, @Context HttpServletRequest req) {
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response analysisImage(Image img, @Context HttpServletRequest req) {
         String httpURL = "http://127.0.0.1:5000";
-        ClientConfig clientConfig = null;
+        String analysisStatus = "";
+        String downloadStatus = "";
         Client client = null;
         WebTarget webTarget = null;
         Invocation.Builder invocationBuilder = null;
@@ -140,31 +143,58 @@ public class FileServiceImpl implements FileService {
         int responseCode;
         String responseMessageFromServer = null;
         String responseString = null;
+        HttpSession session = req.getSession(true);
+        int memberId = (int) session.getAttribute("memberId");
+        String imgName = img.getImgName();
+        EntityManagerFactory factory = Persistence.createEntityManagerFactory("com.mycompany_ImageDBService_war_1.0-SNAPSHOTPU");
+        EntityManager em = factory.createEntityManager();
 
         try {
-            clientConfig = new ClientConfig();  // invoke service after setting necessary parameters
-            clientConfig.register(MultiPartFeature.class
-            );
-            client = ClientBuilder.newClient(clientConfig);
-            webTarget = client.target(httpURL);
+            String[] findResult = imageDaoImpl.findImg(em, memberId, imgName);
+            downloadStatus = findResult[0];
+            System.out.println("analysisImage downloadStatus: "+downloadStatus);//====================================================
+            if (downloadStatus.equals("Success")) {
+                String encodImg = findResult[1];
+                base64ToFile(encodImg, img.getFullName());
 
-            formDataMultiPart = new FormDataMultiPart();
-            fileDataBodyPart = new FileDataBodyPart("uploadFile", new File(UPLOAD_FILE_SERVER + Imgname), MediaType.APPLICATION_OCTET_STREAM_TYPE);
-            formDataMultiPart.bodyPart(fileDataBodyPart);   //???
-            formDataMultiPart.field("image_name", Imgname);
+                ClientConfig clientConfig = new ClientConfig();  // invoke service after setting necessary parameters
+                clientConfig.register(MultiPartFeature.class);
+                client = ClientBuilder.newClient(clientConfig);
+                webTarget = client.target(httpURL);
 
-            invocationBuilder = webTarget.request();    // invoke service
-            response = invocationBuilder.post(Entity.entity(formDataMultiPart, MediaType.MULTIPART_FORM_DATA));
-            responseCode = response.getStatus();    // get response code
-            System.out.println("Response code: " + responseCode);
+                formDataMultiPart = new FormDataMultiPart();
+                fileDataBodyPart = new FileDataBodyPart("uploadFile", new File(CATCH_PATH + img.getFullName()), MediaType.APPLICATION_OCTET_STREAM_TYPE);
+                formDataMultiPart.bodyPart(fileDataBodyPart);   //???
+                formDataMultiPart.field("image_name", img.getFullName());
 
-            if (response.getStatus() != 200) {
-                throw new RuntimeException("Failed with HTTP error code : " + responseCode);
+                invocationBuilder = webTarget.request();    // invoke service
+                response = invocationBuilder.post(Entity.entity(formDataMultiPart, MediaType.MULTIPART_FORM_DATA));
+                responseCode = response.getStatus();    // get response code
+                System.out.println("Response code from flask: " + responseCode);
+
+                if (response.getStatus() != 200) {
+                    //                    throw new RuntimeException("Failed with HTTP error code : " + responseCode);
+                    analysisStatus = " UnSuccess: " + response.getStatus();
+                    return Response.ok(new JSONObject().put("DownloadStatus", downloadStatus).put("AnalysisStatus", analysisStatus)
+                            .toString(), MediaType.APPLICATION_JSON).build();
+                }
+                analysisStatus = response.getStatus() + "";
+                responseMessageFromServer = response.getStatusInfo().getReasonPhrase(); // get response message
+                responseString = response.readEntity(String.class);
+                
+                return Response.ok(new JSONObject()
+                        .put("responseString", responseString)
+                        .put("encodImg", encodImg)
+                        .put("DownloadStatus", downloadStatus).put("AnalysisStatus", analysisStatus)
+                        .toString(), MediaType.APPLICATION_JSON).build();
+            } else {
+                System.out.println("analysisImage: Response.ok");//====================================================
+                return Response.ok(new JSONObject().put("DownloadStatus", downloadStatus).put("AnalysisStatus", analysisStatus)
+                        .toString(), MediaType.APPLICATION_JSON).build();
             }
-            responseMessageFromServer = response.getStatusInfo().getReasonPhrase(); // get response message
-            responseString = response.readEntity(String.class);
         } catch (Exception ex) {
             ex.printStackTrace();
+            return Response.ok(new JSONObject().put("Status", "UnSuccess: Something wrong.").toString(), MediaType.APPLICATION_JSON).build();
         } finally {
             try {   // release resources, if any
                 fileDataBodyPart.cleanup();
@@ -177,9 +207,14 @@ public class FileServiceImpl implements FileService {
                         .getName()).log(Level.SEVERE, null, ex);
             }
         }
-        return Response.ok(responseString).build();
+//        return Response.ok(responseString).build();
+
     }
 
+//    @POST
+//    @Path("/analysis")
+//    @Consumes(MediaType.MULTIPART_FORM_DATA)
+//    public 
     private String writeToDBServer(InputStream inputStream, FormDataContentDisposition fullName, int memberId) throws IOException {
         ByteArrayOutputStream outputStream = null;
         String[] base_ext = separateName(fullName.getFileName());
@@ -223,5 +258,39 @@ public class FileServiceImpl implements FileService {
         String[] base_extension = {base, extension};
 
         return base_extension;
+    }
+
+    public static void base64ToFile(String base64, String fileName) {
+        File file = null;
+        File dir = new File(CATCH_PATH);
+        if (!dir.exists() && !dir.isDirectory()) {
+            dir.mkdirs();
+        }
+        BufferedOutputStream bos = null;
+        java.io.FileOutputStream fos = null;
+        try {
+            byte[] bytes = Base64.getDecoder().decode(base64);
+            file = new File(CATCH_PATH + fileName);
+            fos = new java.io.FileOutputStream(file);
+            bos = new BufferedOutputStream(fos);
+            bos.write(bytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (bos != null) {
+                try {
+                    bos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

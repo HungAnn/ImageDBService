@@ -32,6 +32,7 @@ public class MemberDaoImpl implements MemberDao {
             transaction.begin();
             Member mem = new Member();
             mem.setName(Base64.getEncoder().encodeToString(name.getBytes("UTF-8")));
+            System.out.println(Base64.getEncoder().encodeToString(name.getBytes("UTF-8")));
             mem.setEmail(mail);
             mem.setAccount(account);
             mem.setPassword(password);

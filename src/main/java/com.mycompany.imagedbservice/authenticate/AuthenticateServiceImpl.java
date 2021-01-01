@@ -59,9 +59,6 @@ public class AuthenticateServiceImpl implements AuthenticateService {
         int memberId = -1;
         String idtokenString = new JSONObject(idtokenJson).getString("idtoken");
 
-//        System.out.println("======================");
-//        System.out.println(req.getAttributeNames());
-//        System.out.println("======================");
         EntityManagerFactory factory = Persistence.createEntityManagerFactory("com.mycompany_ImageDBService_war_1.0-SNAPSHOTPU");
         EntityManager em = factory.createEntityManager();
         try {
@@ -74,7 +71,7 @@ public class AuthenticateServiceImpl implements AuthenticateService {
         JacksonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
-                .setAudience(Collections.singletonList("368378304196-7425nuf6veshm6q8h7o2ue5g0u2jtdpu.apps.googleusercontent.com"))// Or, if multiple clients access the backend:
+                .setAudience(Collections.singletonList("302474309018-hti64pabkoq9666favrrb5oqf3cnj3o2.apps.googleusercontent.com"))// Or, if multiple clients access the backend:
                 .build();
         try {
             idToken = verifier.verify(idtokenString);
@@ -84,14 +81,11 @@ public class AuthenticateServiceImpl implements AuthenticateService {
             Logger.getLogger(AuthenticateServiceImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
         if (idToken != null) {
+            System.out.println(idToken);
             Payload payload = idToken.getPayload();
             String email = payload.getEmail().split("@")[0];  // Get profile information from payload
             boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
             String name = (String) payload.get("name");
-//            String pictureUrl = (String) payload.get("picture");
-//            String locale = (String) payload.get("locale");
-//            String familyName = (String) payload.get("family_name");
-//            String givenName = (String) payload.get("given_name");
             try {
                 memberId = memberDaoImplDaoImpl.findMember(em, name, email);
                 if (memberId > 0) {

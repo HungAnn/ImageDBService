@@ -17,19 +17,7 @@
             Object memberId = session.getAttribute("memberId");
         %>
         var memberId = <%= memberId%>;
-        function encode(str) {
-            var buf = [];
-
-            for (var i = str.length - 1; i >= 0; i--) {
-                buf.unshift(['&#', str[i].charCodeAt(), ';'].join(''));
-            }
-            return buf.join('');
-        }
-        function decode(str) {
-            return str.replace(/&#(\d+);/g, function (match, dec) {
-                return String.fromCharCode(dec);
-            });
-        }
+        
         function login() {
             var account = document.getElementById("account").value;
             var password = document.getElementById("password").value;
@@ -49,29 +37,27 @@
                         document.getElementById("form1").style.visibility = "hidden";
                         document.getElementById("signout").style.visibility = "visible";
                         document.getElementById("DBService").style.visibility = "visible";
-                        document.getElementById("DBService").href = "fileservice.jsp";
                     }
                 },
                 error: function (msg) {
                     var result = document.getElementById("success");
-                    result.innerHTML = "Have some problem is transmission stage";
+                    result.innerHTML = "Have some problem in transmission stage";
                 }
             });
         }
         function signOut() {
-
+            window.location.href = "index.jsp";
         }
     </script>
     <body>
         <form id="form1" method="post">
-            <h1>app_login</h1><br>
-            <label>Please login</label><br>
+            <h1>Login</h1><br>
             Please enter your account:    <input type="text" id="account" name="account"><br>
             Please enter your password: <input type="text" id="password" name="password"><br>
             <input type = 'button'  onclick="login()" value="Login" >
         </form><br>
         <p><div id="success"></div></p>
-    <a  id="DBService" href="#" style="visibility:hidden">Go to my web service.</a><br>
+    <a  id="DBService" href="fileservice.jsp" style="visibility:hidden">Go to my web service.</a><br>
     <a id="signout" href="#" onclick="signOut();" style="visibility:hidden">Sign out</a>
 </body>
 </html>

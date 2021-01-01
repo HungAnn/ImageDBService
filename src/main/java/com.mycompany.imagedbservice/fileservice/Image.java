@@ -94,5 +94,10 @@ public class Image {
     public void setPicByte(String picByte) {
         this.picByte = picByte;
     }
+    
+    public String getFullName(){
+        System.out.println(this.getImgName()+"."+this.getType());
+        return this.getImgName()+"."+this.getType();
+    }
 
 }

@@ -59,8 +59,7 @@
     <body>
 
         <form>
-            <h1>app_register</h1><br>
-            <label>Please register</label><br>
+            <h1>Register</h1><br>
             Please enter your account:    <input type="text" id="account"><br>
             Please enter your password: <input type="text" id="password"><br>
             <input type = 'button'  onclick="Submit()" value="Register">

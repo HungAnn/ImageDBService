@@ -19,5 +19,5 @@ import javax.persistence.Tuple;
 public interface ImageDao {
     public String persistImg(EntityManager em, String imgName, String type, String picByte, int memberId);
     public String[] findImg(EntityManager em, int memberId, String imgName);
-    public List loadImgs(EntityManager em);
+    public List findImgs(EntityManager em, int memberId);
 }

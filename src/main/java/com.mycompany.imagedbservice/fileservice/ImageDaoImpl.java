@@ -41,7 +41,7 @@ public class ImageDaoImpl implements ImageDao {
             return "Success";
         } catch (PersistenceException e) {
             e.printStackTrace();
-            return "Unsuccessfully: ConstraintViolationException: image name already exist.";
+            return "Unsuccessfully: Some problem in persistence stage.";
         } finally {
             if (transaction.isActive()) {
                 transaction.rollback();
@@ -53,45 +53,41 @@ public class ImageDaoImpl implements ImageDao {
     public String[] findImg(EntityManager em, int memberId, String imgName) {
         String resString[] = new String[2];
         String findedImg = null;
-        String selectStatus = "UnSuccess: No entity found or Permission denied";
-        
-        TypedQuery<String> query = em.createQuery("SELECT i.picByte FROM Image i WHERE (i.imgName = :imgName AND i.member.id = :memberId)", String.class);
+        String findedStatus = "UnSuccess: No entity found or Permission denied, please make sure your input.";
+
+        TypedQuery<String> query = em.createQuery("SELECT i.picByte FROM Image i WHERE"
+                + " (i.imgName = :imgName AND i.member.id = :memberId)", String.class);
         query.setParameter("memberId", memberId);
         query.setParameter("imgName", imgName);
         try {
             findedImg = query.getSingleResult();
-            selectStatus = "Success";
+            findedStatus = "Success";
         } catch (NoResultException e) {
             System.out.println("======================================================================");
             System.out.println("NoResultException: No entity found for query Image");
             System.out.println("======================================================================");
-        } catch (Exception e) {
-            e.printStackTrace();
         }
         resString[1] = findedImg;
-        resString[0] = selectStatus;
+        resString[0] = findedStatus;
         return resString;
     }
 
-    public List loadImgs(EntityManager em) {
-        TypedQuery<Tuple> query = em.createQuery("SELECT i.imgName, i.type FROM Image i", Tuple.class);
+    public List findImgs(EntityManager em, int memberId) {
+        String findedStatus = "UnSuccess: No entity found or Permission denied, please make sure your input.";
+        TypedQuery<Tuple> query = em.createQuery("SELECT i.imgName, i.type FROM Image i WHERE "
+                + "(i.member.id = :memberId)", Tuple.class);
+        
+        query.setParameter("memberId", memberId);
         List<Tuple> resultList = query.getResultList();
 
         System.out.println("======================");
         for (Tuple t : resultList) {
             String imgName = t.get(0, String.class);
             String type = t.get(1, String.class);
-            System.out.println("imgId: " + imgName + ", imgName: " + type);
+            System.out.println("imgName: " + imgName + ", type: " + type);
         }
         System.out.println("======================");
-//        TypedQuery<Image> query = em.createQuery("select i from Image i", Image.class);
-//        List<Image> resultList = query.getResultList();
-//
-//        System.out.println("======================");
-//        for (Image t : resultList) {
-//            System.out.println(t.toString());
-//        }
-//        System.out.println("======================");
+        
         return resultList;
     }
 }

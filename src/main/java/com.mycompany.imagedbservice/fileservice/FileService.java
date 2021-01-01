@@ -19,12 +19,15 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
  */
 public interface FileService {
 
-    String UPLOAD_FILE_SERVER = "/home/imsofa/";
+    String CATCH_PATH = "/home/imsofa/catch/";
 
-//    public Response downloadImage(Image img, @Context HttpServletRequest req);
-    public Response downloadImage(@FormDataParam("fname") String fullName, @Context HttpServletRequest req);
+    public Response downloadImage(Image img, @Context HttpServletRequest req);
+//    public Response downloadImage(@FormDataParam("fname") String fullName, @Context HttpServletRequest req);
 
-    public Response uploadImage(InputStream fileInputStream, FormDataContentDisposition fileFormDataContentDisposition, @Context HttpServletRequest req);
+    public Response uploadImage(@FormDataParam("uploadFile") InputStream fileInputStream,
+            @FormDataParam("uploadFile") FormDataContentDisposition fileFormDataContentDisposition,
+            @Context HttpServletRequest req);
 
-    public Response analysisImage(String Imgname);
+//    public Response analysisImage(@FormDataParam("fname") String fullName, @Context HttpServletRequest req);
+    public Response analysisImage(Image img, @Context HttpServletRequest req);
 }
